@@ -1,0 +1,11 @@
+--extra-index-url https://download.pytorch.org/whl/cu118
+
+pandas
+scikit-learn
+torch==2.3.1+cu118
+torchvision==0.18.1+cu118
+torchaudio==2.3.1+cu118
+torchmetrics
+tqdm
+matplotlib
+optuna
