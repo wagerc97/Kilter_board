@@ -10,6 +10,7 @@ from torch.optim import Optimizer
 from torch.nn.modules.loss import _Loss
 from torchmetrics import Metric
 import shutil
+import time
 
 from utils import EarlyStopping
 
@@ -60,12 +61,14 @@ def train_model(
 
     for epoch in (range(epochs)):
         # --- training ---
+        
         model.train()
+        acc_fn.reset()
         train_loss, train_acc = 0.0, 0.0
-
+        t0 = time.perf_counter()
         for X, y in train_loader:
             X, y = X.to(device), y.to(device)
-
+            
             y_pred = model(X)
             loss = loss_fn(y_pred, y)
 
@@ -84,6 +87,8 @@ def train_model(
 
         all_train_loss.append(train_loss)
         all_train_acc.append(train_acc)
+        
+        t1 = time.perf_counter()
 
         # --- evaluation ---
         model.eval()
@@ -102,12 +107,16 @@ def train_model(
 
         all_test_loss.append(test_loss)
         all_test_acc.append(test_acc)
+        
+        t2 = time.perf_counter()
 
-        """if epoch % 10 == 0:
-            print(f"\nEpoch {epoch:04d} | "
-                    f"Train loss: {train_loss:.5f} | Train acc: {train_acc:.5f} | "
-                    f"Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}")"""
-
+        #if epoch % 1 == 0:
+            #print(f"\nEpoch {epoch:04d} | "
+            #        f"Train loss: {train_loss:.5f} | Train acc: {train_acc:.5f} | "
+            #        f"Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}")
+            #print(f"Timing: total {t2 - t0:.3f} s | "
+            #        f"train {t1 - t0:.3f} s | "
+            #        f"eval {t2 - t1:.3f} s")
         # --- early stopping ---
         if early_stopping(test_loss, model):
             #print(f"Early stopping at epoch {epoch}")
@@ -117,7 +126,7 @@ def train_model(
             break
 
     # 1. Move "best_model.pt" to checkpoint
-    shutil.copy("best_model.pt", checkpoint_path)
+    #shutil.copy("best_model.pt", checkpoint_path)
 
 
     history = {

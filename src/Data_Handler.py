@@ -69,12 +69,11 @@ class ClimbingDataset(Dataset):
 
         # Normalize difficulty labels (subtract min to start from 0)
         self.data_df["difficulty"] = self.map_labels()
-        self.num_classes = len(self.data_df["difficulty"].unique())
+        self.num_classes = len(self.data_df["difficulty"].unique()) 
 
         # Optionally filter dataset by difficulty levels
         if label_filter:
             self.data_df = self.data_df[self.data_df["difficulty"].isin(label_filter)].reset_index(drop=True)
-            
 
         # Extract unique route IDs and count routes
         self.unique_routs = np.sort(self.data_df["route_id"].unique())
@@ -235,7 +234,7 @@ class ClimbingDataset(Dataset):
         X = torch.stack([start, middle, foot, finish], dim=0).unsqueeze(0)
 
         if transform:
-            X = transform(X)
+            X = transform(X).squeeze() 
 
         return X, y
     

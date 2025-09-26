@@ -32,23 +32,21 @@ class shallowCNN(nn.Module):
                 self.conv_block_1 = nn.Sequential(
                         nn.Conv2d(in_channels=input_shape,
                                 out_channels= hidden_units_CNN,
-                                kernel_size= 5,
+                                kernel_size= 3,
                                 stride=1,
-                                padding=2),
+                                padding=1),
+                        nn.ReLU(),                        
                         nn.BatchNorm2d(hidden_units_CNN),
-                        nn.ReLU(),
-                        nn.MaxPool2d(kernel_size=2),
+                        #nn.MaxPool2d(kernel_size=2),
                         nn.Conv2d(in_channels=hidden_units_CNN,
                                 out_channels= hidden_units_CNN,
                                 kernel_size= 3,
                                 stride=1,
-                                padding=2),
-                        nn.BatchNorm2d(hidden_units_CNN),
+                                padding=1),
                         nn.ReLU(),
+                        nn.BatchNorm2d(hidden_units_CNN)
                         #nn.MaxPool2d(kernel_size=2)
                 )
-
-
                 self.classifier = nn.Sequential(
                         nn.AdaptiveAvgPool2d(1),
                         nn.Flatten(),
@@ -61,9 +59,7 @@ class shallowCNN(nn.Module):
                         nn.Linear(hidden_units_classifier, output_shape)
                 )
         def forward(self, x):
-                #print(x.shape)
                 x = self.conv_block_1(x)
-
                 x = self.classifier(x)
                 return x
         

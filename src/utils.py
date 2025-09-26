@@ -99,3 +99,30 @@ def measure_loader_time(loader: DataLoader, num_batches: int = 20, skip_first: b
     return avg_time
 
 
+class Multiclass_accuracy:
+    def reset(self):
+        pass  # no state to reset
+    
+    def __call__(self, y_pred, y_true):
+        return multiclass_accuracy(y_pred, y_true)
+
+def multiclass_accuracy(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
+    """
+    Compute multiclass accuracy.
+    
+    Parameters
+    ----------
+    y_pred : torch.Tensor
+        Model outputs, shape [N, num_classes], raw logits or probabilities.
+    y_true : torch.Tensor
+        Ground truth labels, shape [N], as integer class indices.
+    
+    Returns
+    -------
+    float
+        Accuracy = correct / total.
+    """
+    # predicted class = argmax over class dimension
+    correct = (y_pred == y_true).sum()
+    total = y_true.size(0)
+    return correct / total
