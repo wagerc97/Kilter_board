@@ -98,9 +98,7 @@ class CNN_K3(nn.Module):
                         nn.ReLU()
                 )
         def forward(self, x):
-                x = self.conv_block_1(x)
-                x = self.classifier(x)
-                return x
+                return self.conv_block_1(self.conv_block_1(x))
         
 class CNN_K5(nn.Module):
         def __init__(self,
@@ -136,9 +134,7 @@ class CNN_K5(nn.Module):
                         nn.ReLU()
                 )
         def forward(self, x):
-                x = self.conv_block_1(x)
-                x = self.classifier(x)
-                return x
+                return self.conv_block_1(self.conv_block_1(x))
         
 class CNN_K7(nn.Module):
         def __init__(self,
@@ -174,9 +170,7 @@ class CNN_K7(nn.Module):
                         nn.ReLU()
                 )
         def forward(self, x):
-                x = self.conv_block_1(x)
-                x = self.classifier(x)
-                return x
+                return self.conv_block_1(self.conv_block_1(x))
 
         
 class CNN_K9(nn.Module):
@@ -218,9 +212,7 @@ class CNN_K9(nn.Module):
                         nn.Linear(hidden_units_classifier, output_shape)
                 )
         def forward(self, x):
-                x = self.conv_block_1(x)
-                x = self.classifier(x)
-                return x
+                return self.conv_block_1(self.conv_block_1(x))
         
         
 class CNN_K11(nn.Module):
@@ -262,8 +254,4 @@ class CNN_K11(nn.Module):
                         nn.Linear(hidden_units_classifier, output_shape)
                 )
         def forward(self, x):
-                x = self.conv_block_1(x)
-                x = self.classifier(x)
-                return x
-        
-  
+                return self.conv_block_1(self.conv_block_1(x))
