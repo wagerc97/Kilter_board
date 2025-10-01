@@ -1,4 +1,5 @@
 import torch
+from torchmetrics import Metric
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
@@ -6,6 +7,7 @@ from utils import *
 import torch
 import warnings
 from collections import Counter, defaultdict
+
 
 
 
@@ -43,6 +45,47 @@ def plot_training_history(history):
 
     plt.tight_layout()
     plt.show()
+
+
+def plot_training_histories(histories):
+    """
+    Plot training and test loss/accuracy for multiple models.
+    Train and test curves for the same model use the same color.
+    
+    Args:
+        histories: dict of {model_name: history_dict}, 
+                   where each history_dict has keys 
+                   'train_loss', 'test_loss', 'train_acc', 'test_acc'
+    """
+    plt.figure(figsize=(14, 6))
+
+    # ---- Loss plot ----
+    plt.subplot(1, 2, 1)
+    for idx, (model_name, history) in enumerate(histories.items()):
+        epochs = range(len(history["train_loss"]))
+        color = f"C{idx}"  # use matplotlib's default color cycle
+        plt.plot(epochs, history["train_loss"], label=f"{model_name} Train", color=color)
+        plt.plot(epochs, history["test_loss"], linestyle="--", label=f"{model_name} Test", color=color)
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Training vs Test Loss")
+    plt.legend()
+
+    # ---- Accuracy plot ----
+    plt.subplot(1, 2, 2)
+    for idx, (model_name, history) in enumerate(histories.items()):
+        epochs = range(len(history["train_acc"]))
+        color = f"C{idx}"
+        plt.plot(epochs, history["train_acc"], label=f"{model_name} Train", color=color)
+        plt.plot(epochs, history["test_acc"], linestyle="--", label=f"{model_name} Test", color=color)
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.title("Training vs Test Accuracy")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
     
     
 def plot_sample_routes(dataset, n: int = 10, grades=None):
@@ -179,9 +222,91 @@ def plot_label_distribution(train_dataset, test_dataset, num_classes):
     plt.legend()
     plt.show()
     
+
+
+
+
 import torch
-import pandas as pd
-from collections import Counter, defaultdict
+import matplotlib.pyplot as plt
+
+def plot_prediction_distribution(model, test_loader, num_classes, model_name, acc_fn, device="cpu"):
+    """
+    Plot true vs predicted label distribution for a given model on test_loader,
+    and print overall accuracy.
+
+    Args:
+        model: trained torch.nn.Module
+        test_loader: DataLoader for the test set
+        num_classes: number of output classes
+        model_name: string name of the model (for plot title)
+        acc_fn: metric function (e.g., MulticlassAccuracy from torchmetrics)
+        device: torch device (default 'cpu')
+    """
+    model.eval()
+    model.to(device)
+
+    preds, labels = [], []
+    acc_total = 0.0
+
+    with torch.no_grad():
+        for X, y in test_loader:
+            X, y = X.to(device), y.to(device)
+
+            logits = model(X)
+            batch_preds = torch.argmax(logits, dim=1)   # predicted class indices
+            batch_labels = torch.argmax(y, dim=1)       # true class indices
+
+            preds.append(batch_preds.cpu())
+            labels.append(batch_labels.cpu())
+
+            # compute batch accuracy
+            acc_total += acc_fn(batch_preds, batch_labels).item()
+
+    # flatten lists into tensors
+    preds = torch.cat(preds)    # shape (N,)
+    labels = torch.cat(labels)  # shape (N,)
+
+    total = len(labels)
+    correct = (preds == labels).sum().item()
+    accuracy = 100.0 * correct / total if total > 0 else 0.0
+    acc_avg = 100.0 * acc_total / len(test_loader)
+
+    # --- Distributions ---
+    true_counts = torch.bincount(labels, minlength=num_classes).numpy()
+    pred_counts = torch.bincount(preds, minlength=num_classes).numpy()
+
+    print(f"\n📊 Distributions for {model_name}:")
+    print("True labels:")
+    for i, count in enumerate(true_counts):
+        pct = 100 * count / total if total > 0 else 0
+        if pct > 0.1:
+            print(f"  Class {i}: {count} ({pct:.1f}%)")
+
+    print("\nPredicted labels:")
+    for i, count in enumerate(pred_counts):
+        pct = 100 * count / total if total > 0 else 0
+        if pct > 0.1:
+            print(f"  Class {i}: {count} ({pct:.1f}%)")
+
+    print(f"\n✅ Accuracy (overall): {accuracy:.2f}% ({correct}/{total})")
+    print(f"ℹ️  Accuracy via acc_fn (avg over batches): {acc_avg:.2f}%")
+
+    # ---- Plot ----
+    x = range(num_classes)
+    width = 0.4
+
+    plt.figure(figsize=(12, 6))
+    plt.bar([i - width/2 for i in x], true_counts, width=width, label="True")
+    plt.bar([i + width/2 for i in x], pred_counts, width=width, label="Predicted")
+
+    plt.xticks(ticks=list(x), labels=[get_grade(i) for i in x], rotation=45)
+    plt.ylabel("Count")
+    plt.title(f"True vs Predicted Distribution - {model_name}\nAccuracy: {accuracy:.2f}%")
+    plt.legend()
+    plt.show()
+
+
+
 
 
 

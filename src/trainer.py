@@ -25,7 +25,7 @@ def train_model(
     device: torch.device,
     epochs: int = 1000,
     patience: int = 5,
-    checkpoint_path: str = "best_model.pt"
+    model_name: str = None
 ) -> Tuple[torch.nn.Module, Dict[str, List[float]]]:
     """
     Train a PyTorch model with early stopping.
@@ -52,8 +52,14 @@ def train_model(
                 "test_acc": [...]
             }
     """
+    if model_name == None:
+        model_name=model.__class__.__name__
+        
+        
     model = model.to(device)
+    checkpoint_path = f"checkpoints/{model_name}_best.pt"
     early_stopping = EarlyStopping(patience=patience, path=checkpoint_path)
+    
 
     all_train_loss, all_train_acc = [], []
     all_test_loss, all_test_acc = [], []
@@ -110,23 +116,23 @@ def train_model(
         
         t2 = time.perf_counter()
 
-        #if epoch % 1 == 0:
-            #print(f"\nEpoch {epoch:04d} | "
-            #        f"Train loss: {train_loss:.5f} | Train acc: {train_acc:.5f} | "
-            #        f"Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}")
-            #print(f"Timing: total {t2 - t0:.3f} s | "
-            #        f"train {t1 - t0:.3f} s | "
-            #        f"eval {t2 - t1:.3f} s")
+        if epoch % 1 == 0:
+            print(f"\nEpoch {epoch:04d} | "
+                    f"Train loss: {train_loss:.5f} | Train acc: {train_acc:.5f} | "
+                    f"Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}")
+            print(f"Timing: total {t2 - t0:.3f} s | "
+                    f"train {t1 - t0:.3f} s | "
+                    f"eval {t2 - t1:.3f} s")
         # --- early stopping ---
         if early_stopping(test_loss, model):
-            #print(f"Early stopping at epoch {epoch}")
-            #print(f"Epoch {epoch:04d} | "
-            #        f"Train loss: {train_loss:.5f} | Train acc: {train_acc:.5f} | "
-            #        f"Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}")
+            print(f"Early stopping at epoch {epoch}")
+            print(f"Epoch {epoch:04d} | "
+                    f"Train loss: {train_loss:.5f} | Train acc: {train_acc:.5f} | "
+                    f"Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}")
             break
 
-    # 1. Move "best_model.pt" to checkpoint
-    #shutil.copy("best_model.pt", checkpoint_path)
+    model.load_state_dict(torch.load(checkpoint_path))
+    model.to(device)
 
 
     history = {

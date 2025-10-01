@@ -96,7 +96,8 @@ class ClimbingDataset(Dataset):
                 transform=self.transform
             )
             self.routs_mtx.append((X, y))
-        
+            
+        self.num_features = X.shape[0]
         # Delet overhead 
         del self.data_df
         #del self.route_groups
@@ -231,7 +232,9 @@ class ClimbingDataset(Dataset):
         foot   = mtx_encoding(route_df[route_df["role_name"] == "foot"])
         finish = mtx_encoding(route_df[route_df["role_name"] == "finish"])
 
+        
         X = torch.stack([start, middle, foot, finish], dim=0).unsqueeze(0)
+        
 
         if transform:
             X = transform(X).squeeze() 

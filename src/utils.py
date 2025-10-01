@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from typing import Optional
 
 class EarlyStopping:
-    def __init__(self, patience=5, path="best_model.pt"):
+    def __init__(self, patience=5, path="checkpoints/best_model.pt"):
         self.patience = patience
         self.counter = 0
         self.best_loss = float("inf")
