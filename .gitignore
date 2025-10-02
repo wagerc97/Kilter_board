@@ -1,2 +1,12 @@
 .venv/
 .venv/
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+env.bak/
+venv/
+venv.bak/
+.idea/
