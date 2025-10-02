@@ -15,4 +15,4 @@ The most promising results so far have come from **Convolutional Neural Networks
 ## Key Files
 
 * `CNN.ipynb`
-  This is the primary notebook to reference (see [HERE](src/CNN.ipynb)). It contains the end-to-end pipeline: data preprocessing, CNN architecture definition, training, evaluation, and visualizations of performance.
+  This is the primary notebook to reference (see [HERE](src/notebooks/CNN.ipynb)). It contains the end-to-end pipeline: data preprocessing, CNN architecture definition, training, evaluation, and visualizations of performance.
