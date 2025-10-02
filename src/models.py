@@ -1,4 +1,18 @@
 import torch.nn as nn
+import argparse
+import torch
+import torch.nn.functional as F
+
+
+
+
+
+
+
+
+
+
+
 
 
 class ShallowMLP(nn.Module):
@@ -98,7 +112,9 @@ class CNN_K3(nn.Module):
                         nn.ReLU()
                 )
         def forward(self, x):
-                return self.conv_block_1(self.conv_block_1(x))
+                x = self.conv_block_1(x)
+                x = self.classifier(x)
+                return x
         
 class CNN_K5(nn.Module):
         def __init__(self,
@@ -134,7 +150,8 @@ class CNN_K5(nn.Module):
                         nn.ReLU()
                 )
         def forward(self, x):
-                return self.conv_block_1(self.conv_block_1(x))
+                return self.classifier(self.conv_block_1(x))
+                
         
 class CNN_K7(nn.Module):
         def __init__(self,
@@ -170,7 +187,9 @@ class CNN_K7(nn.Module):
                         nn.ReLU()
                 )
         def forward(self, x):
-                return self.conv_block_1(self.conv_block_1(x))
+                x = self.conv_block_1(x)
+                x = self.classifier(x)
+                return x
 
         
 class CNN_K9(nn.Module):
@@ -212,7 +231,9 @@ class CNN_K9(nn.Module):
                         nn.Linear(hidden_units_classifier, output_shape)
                 )
         def forward(self, x):
-                return self.conv_block_1(self.conv_block_1(x))
+                x = self.conv_block_1(x)
+                x = self.classifier(x)
+                return x
         
         
 class CNN_K11(nn.Module):
@@ -254,4 +275,59 @@ class CNN_K11(nn.Module):
                         nn.Linear(hidden_units_classifier, output_shape)
                 )
         def forward(self, x):
-                return self.conv_block_1(self.conv_block_1(x))
+                x = self.conv_block_1(x)
+                x = self.classifier(x)
+                return x
+        
+
+class CNN_PeRo(nn.Module):
+    def __init__(self,
+                input_shape: int = 4,
+                hidden_units_CNN: int = 32,
+                hidden_units_classifier: int= 32,
+                output_shape: int = 32
+                ):
+        super().__init__()
+        
+        # Conv layers
+        self.conv1 = nn.Conv2d(in_channels=input_shape, out_channels=hidden_units_CNN, kernel_size=3)
+        self.bn1   = nn.BatchNorm2d(hidden_units_CNN)
+        
+        self.conv2 = nn.Conv2d(hidden_units_CNN, hidden_units_CNN, kernel_size=3)
+        self.bn2   = nn.BatchNorm2d(hidden_units_CNN)
+        
+        self.conv3 = nn.Conv2d(hidden_units_CNN, hidden_units_CNN * 2, kernel_size=3)
+        self.bn3   = nn.BatchNorm2d(hidden_units_CNN * 2)
+        
+        self.conv4 = nn.Conv2d(hidden_units_CNN * 2, hidden_units_CNN * 2, kernel_size=3)
+        self.bn4   = nn.BatchNorm2d(hidden_units_CNN * 2)
+        
+        # Fully connected layers
+        self.fc1 = nn.LazyLinear(out_features=hidden_units_classifier)  # adjust dimensions after convs
+        self.fc2 = nn.Linear(hidden_units_classifier, output_shape)  # linear output
+
+    def forward(self, x):
+        # Input: (batch, 18*11) → reshape to (batch, 1, 18, 11)
+        #x = x.view(-1, 1, 18, 11)
+
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
+        x = F.relu(self.bn4(self.conv4(x)))
+
+        x = torch.flatten(x, 1)  # flatten all dims except batch
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)  # linear activation
+        return x
+  
+CNN_MODEL_REGISTRY = {
+    "CNN_PeRo": CNN_PeRo,
+    "CNN_K3": CNN_K3,
+    "CNN_K5": CNN_K5,
+    "CNN_K7": CNN_K7,
+    "CNN_K9": CNN_K9,
+    "CNN_K11": CNN_K11,
+    "shallowCNN": shallowCNN,
+    
+}
+
