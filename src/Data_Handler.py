@@ -6,11 +6,13 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 
-from torch.utils.data import Dataset
+from torch.utils.data import  DataLoader, Dataset, random_split
 import torch
 from pympler import asizeof
 import torch.nn.functional as F
 import sys
+import kornia.filters as KF
+import os
 
 
 class ClimbingDataset(Dataset):
@@ -323,16 +325,12 @@ class ClimbingDataset(Dataset):
             - 'roles': DataFrame of role tokens with role info
         """
         
-        # Get the path to the current file (e.g. kilter/)
-        base_dir = Path.cwd().parent.parent
-
-        # Data folder inside kilter/
+        base_dir = Path(__file__).resolve().parent.parent   # project_root/
         data_dir = base_dir / "data"
 
         boards_db = data_dir / "boards.db"
         static_db = data_dir / "static.db"
         
-        #print(f"Loading data for board '{board_name}' from {boards_db} and {static_db}")
 
         with sqlite3.connect(boards_db) as conn:
             # attach static db
@@ -366,7 +364,89 @@ class ClimbingDataset(Dataset):
         return data
 
 
+def CNN_dataloaders(
+                board_names: list[str] = ["12 x 12 with kickboard Square"],
+                map: bool = True,
+                max_samples: int | None = None,
+                label_filter: list[int] = [5, 14],      # 6a+ & 7c
+                blur_kernel_size:int = 3,
+                blur_sigma: float = 1.0,
+                batch_size:int = 32,
+                num_workers:int = 0,
+                train_test_split:float = 0.8) -> Tuple[DataLoader, DataLoader]:
+    """
+    Create training and test DataLoaders for climbing board data.
 
+    This function builds a dataset using `ClimbingDataset`, applies Gaussian blur
+    as a preprocessing transform, splits the dataset into train/test subsets, 
+    and returns corresponding PyTorch DataLoaders.
+
+    Parameters
+    ----------
+    board_names : list of str, default=["12 x 12 with kickboard Square"]
+        Names of climbing boards to include in the dataset.
+    map : bool, default=True
+        Whether to return the climbing problems as maps.
+    max_samples : int or None, default=None
+        Maximum number of samples to include. If None, use the full dataset.
+    label_filter : list of int, default=[5, 14]
+        List of labels (difficulty levels) to keep in the dataset.
+    blur_kernel_size : int, default=3
+        Size of the Gaussian blur kernel.
+    blur_sigma : float, default=1.0
+        Standard deviation for the Gaussian blur.
+    batch_size : int, default=32
+        Number of samples per batch in the DataLoader.
+    num_workers : int, default=0
+        Number of subprocesses used for data loading. 
+        On Windows, often set to 0 for stability.
+    train_test_split : float, default=0.8
+        Fraction of data to use for training (rest is used for testing).
+        Must be between 0.0 and 1.0. Invalid values are reset to 0.8.
+
+    Returns
+    -------
+    train_loader : torch.utils.data.DataLoader
+        DataLoader for the training set.
+    test_loader : torch.utils.data.DataLoader
+        DataLoader for the test set.
+
+    Notes
+    -----
+    - The train/test split is deterministic with a fixed random seed (42).
+    - Gaussian blur is applied as a preprocessing step to all samples.
+    """
+    
+    transform = KF.GaussianBlur2d(kernel_size=(blur_kernel_size, blur_kernel_size), sigma=(blur_sigma, blur_sigma), border_type="constant")
+    
+    dataset = ClimbingDataset(board_names=board_names,
+                                map=map, 
+                                transform=transform,
+                                label_filter=label_filter,
+                                max_samples=max_samples
+                                
+    )
+    
+    if not (0.0 <= train_test_split <= 1.0):
+        print(f"Invalid split {train_test_split}, reset to 0.8")
+        train_test_split = 0.8
+    
+    train_size = int(train_test_split * len(dataset))  # 80% train
+    test_size = len(dataset) - train_size
+
+    # Deterministic split (set generator seed for reproducibility)
+    train_dataset, test_dataset = random_split(
+        dataset,
+        [train_size, test_size],
+        generator=torch.Generator().manual_seed(42)
+    )
+
+    # Wrap in DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+    
+    return train_loader, test_loader
+    
 
 
 

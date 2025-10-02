@@ -5,6 +5,9 @@ import numpy as np
 import time
 from torch.utils.data import DataLoader
 from typing import Optional
+from pathlib import Path
+
+import torch.nn as nn
 
 class EarlyStopping:
     def __init__(self, patience=5, path="checkpoints/best_model.pt"):
@@ -126,3 +129,14 @@ def multiclass_accuracy(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
     correct = (y_pred == y_true).sum()
     total = y_true.size(0)
     return correct / total
+
+
+def save_model(model:nn.Module, model_name=str):
+    project_root = Path(__file__).resolve().parent.parent
+    models_dir = project_root / "models"
+    models_dir.mkdir(parents=True, exist_ok=True)  # make sure folder exists
+
+    model_path = models_dir / f"{model_name}.pt"
+
+    torch.save(model.state_dict(), model_path)
+    print(f"Model saved to {model_path}")
